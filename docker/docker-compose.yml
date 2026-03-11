@@ -1,0 +1,159 @@
+version: '3.8'
+
+services:
+  # =====================================================
+  # 基础设施服务
+  # =====================================================
+  
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: myliu-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: xiong3410313
+      MYSQL_DATABASE: myliu_flowchart
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+      - --max_connections=1000
+      - --innodb_buffer_pool_size=512M
+    networks:
+      - myliu-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pxiong3410313"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: myliu-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    networks:
+      - myliu-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO文件存储
+  minio:
+    image: minio/minio:latest
+    container_name: myliu-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: admin123456
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - myliu-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # =====================================================
+  # 应用服务
+  # =====================================================
+
+  # 后端服务
+  backend:
+    build:
+      context: ../backend/flowchart-server
+      dockerfile: Dockerfile
+    container_name: myliu-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/myliu_flowchart?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: xiong3410313
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: admin
+      MINIO_SECRET_KEY: admin123456
+      JAVA_OPTS: "-Xms512m -Xmx1024m"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - myliu-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Nginx反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: myliu-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ../frontend/flowchart-app/dist:/usr/share/nginx/html/flowchart:ro
+      - ../frontend/admin-app/dist:/usr/share/nginx/html/admin:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - myliu-network
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# =====================================================
+# 数据卷
+# =====================================================
+volumes:
+  mysql_data:
+    name: myliu-mysql-data
+  redis_data:
+    name: myliu-redis-data
+  minio_data:
+    name: myliu-minio-data
+  nginx_logs:
+    name: myliu-nginx-logs
+
+# =====================================================
+# 网络
+# =====================================================
+networks:
+  myliu-network:
+    name: myliu-network
+    driver: bridge

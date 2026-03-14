@@ -28,6 +28,7 @@ model: auto
 ## 代码规范
 
 ### 组件结构
+
 ```vue
 <template>
   <div class="user-list">
@@ -39,20 +40,20 @@ model: auto
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import type { User } from '@/types'
+import { ref, onMounted } from "vue";
+import type { User } from "@/types";
 
-const users = ref<User[]>([])
-const loading = ref(false)
+const users = ref<User[]>([]);
+const loading = ref(false);
 
 onMounted(async () => {
-  loading.value = true
+  loading.value = true;
   try {
     // 加载数据
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-})
+});
 </script>
 
 <style scoped>
@@ -63,41 +64,44 @@ onMounted(async () => {
 ```
 
 ### API封装
+
 ```typescript
 // api/user.ts
-import request from '@/utils/request'
-import type { User, UserQuery } from '@/types'
+import request from "@/utils/request";
+import type { User, UserQuery } from "@/types";
 
 export const userApi = {
-  list: (params: UserQuery) => request.get<User[]>('/users', { params }),
+  list: (params: UserQuery) => request.get<User[]>("/users", { params }),
   get: (id: number) => request.get<User>(`/users/${id}`),
-  create: (data: Partial<User>) => request.post('/users', data),
-  update: (id: number, data: Partial<User>) => request.put(`/users/${id}`, data),
-  delete: (id: number) => request.delete(`/users/${id}`)
-}
+  create: (data: Partial<User>) => request.post("/users", data),
+  update: (id: number, data: Partial<User>) =>
+    request.put(`/users/${id}`, data),
+  delete: (id: number) => request.delete(`/users/${id}`),
+};
 ```
 
 ### Pinia Store
+
 ```typescript
 // stores/user.ts
-import { defineStore } from 'pinia'
-import { userApi } from '@/api/user'
+import { defineStore } from "pinia";
+import { userApi } from "@/api/user";
 
-export const useUserStore = defineStore('user', {
+export const useUserStore = defineStore("user", {
   state: () => ({
     users: [] as User[],
-    currentUser: null as User | null
+    currentUser: null as User | null,
   }),
 
   actions: {
     async fetchUsers() {
-      const { data } = await userApi.list({})
-      this.users = data
-    }
+      const { data } = await userApi.list({});
+      this.users = data;
+    },
   },
 
-  persist: true
-})
+  persist: true,
+});
 ```
 
 ## 性能优化清单

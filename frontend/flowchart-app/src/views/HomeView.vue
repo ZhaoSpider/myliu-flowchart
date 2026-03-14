@@ -8,6 +8,26 @@
       <nav class="nav">
         <el-button type="primary" @click="createNew">新建流程图</el-button>
         <el-button @click="goFiles">我的文件</el-button>
+        <el-dropdown v-if="userStore.isLoggedIn" @command="handleCommand">
+          <span class="user-dropdown">
+            <el-avatar :size="32" :src="userStore.userInfo?.avatar">
+              {{ userStore.nickname?.charAt(0)?.toUpperCase() }}
+            </el-avatar>
+            <span class="username">{{ userStore.nickname }}</span>
+            <el-icon><ArrowDown /></el-icon>
+          </span>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="profile">
+                <el-icon><User /></el-icon>个人中心
+              </el-dropdown-item>
+              <el-dropdown-item divided command="logout">
+                <el-icon><SwitchButton /></el-icon>退出登录
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+        <el-button v-else @click="router.push('/login')">登录</el-button>
       </nav>
     </header>
     
@@ -45,9 +65,11 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { Edit, Document, Download } from '@element-plus/icons-vue'
+import { Edit, Document, Download, ArrowDown, User, SwitchButton } from '@element-plus/icons-vue'
+import { useUserStore } from '@/store/user'
 
 const router = useRouter()
+const userStore = useUserStore()
 
 const createNew = () => {
   router.push('/editor')
@@ -55,6 +77,14 @@ const createNew = () => {
 
 const goFiles = () => {
   router.push('/files')
+}
+
+const handleCommand = (command: string) => {
+  if (command === 'profile') {
+    router.push('/profile')
+  } else if (command === 'logout') {
+    userStore.logout()
+  }
 }
 </script>
 
@@ -81,6 +111,34 @@ const goFiles = () => {
     img {
       width: 40px;
       height: 40px;
+    }
+  }
+
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .user-dropdown {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: white;
+    cursor: pointer;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.1);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .username {
+      max-width: 100px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 }

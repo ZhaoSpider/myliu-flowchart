@@ -27,91 +27,94 @@ model: auto
 ## 代码规范
 
 ### 画布初始化
+
 ```typescript
-import { Graph } from '@antv/x6'
-import { Selection } from '@antv/x6-plugin-selection'
-import { Snapline } from '@antv/x6-plugin-snapline'
-import { Keyboard } from '@antv/x6-plugin-keyboard'
+import { Graph } from "@antv/x6";
+import { Selection } from "@antv/x6-plugin-selection";
+import { Snapline } from "@antv/x6-plugin-snapline";
+import { Keyboard } from "@antv/x6-plugin-keyboard";
 
 const graph = new Graph({
-  container: document.getElementById('container')!,
+  container: document.getElementById("container")!,
   width: 1000,
   height: 800,
   background: {
-    color: '#f5f5f5'
+    color: "#f5f5f5",
   },
   grid: {
     visible: true,
-    type: 'dot',
-    size: 20
+    type: "dot",
+    size: 20,
   },
   panning: true,
   mousewheel: true,
   connecting: {
-    anchor: 'center',
-    connectionPoint: 'anchor',
-    snap: true
-  }
-})
+    anchor: "center",
+    connectionPoint: "anchor",
+    snap: true,
+  },
+});
 
 // 启用插件
-graph.use(new Selection({ enabled: true }))
-graph.use(new Snapline({ enabled: true }))
-graph.use(new Keyboard({ enabled: true }))
+graph.use(new Selection({ enabled: true }));
+graph.use(new Snapline({ enabled: true }));
+graph.use(new Keyboard({ enabled: true }));
 ```
 
 ### 自定义节点
+
 ```typescript
-import { Shape } from '@antv/x6'
+import { Shape } from "@antv/x6";
 
 // 矩形节点
 Shape.Rect.define({
-  shape: 'custom-rect',
+  shape: "custom-rect",
   width: 100,
   height: 40,
   attrs: {
     body: {
-      fill: '#ffffff',
-      stroke: '#333333',
+      fill: "#ffffff",
+      stroke: "#333333",
       strokeWidth: 1,
       rx: 4,
-      ry: 4
+      ry: 4,
     },
     label: {
-      fill: '#333333',
+      fill: "#333333",
       fontSize: 14,
-      refX: '50%',
-      refY: '50%',
-      textAnchor: 'middle',
-      textVerticalAnchor: 'middle'
-    }
-  }
-})
+      refX: "50%",
+      refY: "50%",
+      textAnchor: "middle",
+      textVerticalAnchor: "middle",
+    },
+  },
+});
 
 // 菱形节点
 Shape.Path.define({
-  shape: 'custom-diamond',
+  shape: "custom-diamond",
   width: 80,
   height: 80,
-  path: 'M 0 40 L 40 0 L 80 40 L 40 80 Z',
+  path: "M 0 40 L 40 0 L 80 40 L 40 80 Z",
   attrs: {
     body: {
-      fill: '#fff2cc',
-      stroke: '#d6b656'
-    }
-  }
-})
+      fill: "#fff2cc",
+      stroke: "#d6b656",
+    },
+  },
+});
 ```
 
 ### 节点操作
+
 ```typescript
 // 添加节点
 graph.addNode({
-  shape: 'custom-rect',
+  shape: "custom-rect",
   x: 100,
   y: 100,
-  label: '开始'
-})
+  label: "开始",
+});
 
 // 添加边
 graph.addEdge({
@@ -119,86 +122,96 @@ graph.addEdge({
   target: { cell: targetNode },
   attrs: {
     line: {
-      stroke: '#333333',
+      stroke: "#333333",
       strokeWidth: 1,
       targetMarker: {
-        name: 'block'
-      }
-    }
-  }
-})
+        name: "block",
+      },
+    },
+  },
+});
 
 // 删除选中元素
-const cells = graph.getSelectedCells()
-graph.removeCells(cells)
+const cells = graph.getSelectedCells();
+graph.removeCells(cells);
 ```
 
 ### 事件处理
+
 ```typescript
 // 节点点击
-graph.on('node:click', ({ node }) => {
-  console.log('点击节点:', node.id)
-})
+graph.on("node:click", ({ node }) => {
+  console.log("点击节点:", node.id);
+});
 
 // 连线事件
-graph.on('edge:connected', ({ edge }) => {
-  console.log('创建连线:', edge.getSourceCellId(), '->', edge.getTargetCellId())
-})
+graph.on("edge:connected", ({ edge }) => {
+  console.log(
+    "创建连线:",
+    edge.getSourceCellId(),
+    "->",
+    edge.getTargetCellId(),
+  );
+});
 
 // 键盘事件
-graph.bindKey(['delete', 'backspace'], () => {
-  const cells = graph.getSelectedCells()
-  graph.removeCells(cells)
-})
+graph.bindKey(["delete", "backspace"], () => {
+  const cells = graph.getSelectedCells();
+  graph.removeCells(cells);
+});
 
 // 撤销/重做
-graph.bindKey('ctrl+z', () => graph.undo())
-graph.bindKey('ctrl+y', () => graph.redo())
+graph.bindKey("ctrl+z", () => graph.undo());
+graph.bindKey("ctrl+y", () => graph.redo());
 ```
 
 ### 数据导出
+
 ```typescript
 // 导出JSON
 const exportJSON = () => {
-  const data = graph.toJSON()
-  const json = JSON.stringify(data, null, 2)
+  const data = graph.toJSON();
+  const json = JSON.stringify(data, null, 2);
   // 保存或下载
-}
+};
 
 // 导出PNG
 const exportPNG = async () => {
-  const dataUri = await graph.toPNG()
-  const link = document.createElement('a')
-  link.download = 'flowchart.png'
-  link.href = dataUri
-  link.click()
-}
+  const dataUri = await graph.toPNG();
+  const link = document.createElement("a");
+  link.download = "flowchart.png";
+  link.href = dataUri;
+  link.click();
+};
 
 // 导出SVG
 const exportSVG = async () => {
-  const svg = await graph.toSVG()
+  const svg = await graph.toSVG();
   // 保存SVG文件
-}
+};
 ```
 
 ### 工具栏实现
+
 ```typescript
 // 撤销/重做栈
-import { History } from '@antv/x6-plugin-history'
+import { History } from "@antv/x6-plugin-history";
 
-graph.use(new History({
-  enabled: true,
-  beforeAddCommand: (event, args) => {
-    // 过滤不需要记录的事件
-    return true
-  }
-}))
+graph.use(
+  new History({
+    enabled: true,
+    beforeAddCommand: (event, args) => {
+      // 过滤不需要记录的事件
+      return true;
+    },
+  }),
+);
 
 // 缩放控制
-const zoomIn = () => graph.zoom(0.1)
-const zoomOut = () => graph.zoom(-0.1)
-const zoomToFit = () => graph.zoomToFit({ padding: 20 })
-const resetZoom = () => graph.zoom(1)
+const zoomIn = () => graph.zoom(0.1);
+const zoomOut = () => graph.zoom(-0.1);
+const zoomToFit = () => graph.zoomToFit({ padding: 20 });
+const resetZoom = () => graph.zoom(1);
 ```
 
 ## 性能优化清单

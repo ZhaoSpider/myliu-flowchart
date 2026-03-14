@@ -25,7 +25,9 @@ export const useUserStore = defineStore('user', () => {
       token.value = data.token
       userInfo.value = data.user
       ElMessage.success('登录成功')
-      router.push('/')
+      // 登录成功后跳转到之前的页面或首页
+      const redirect = router.currentRoute.value.query.redirect as string
+      router.push(redirect || '/')
       return true
     } catch (error) {
       return false

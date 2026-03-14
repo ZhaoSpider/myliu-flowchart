@@ -2,27 +2,15 @@
   <div class="node-sidebar">
     <h3 class="sidebar-title">节点库</h3>
     <div class="node-list">
-      <div
-        class="node-item"
-        draggable="true"
-        @dragstart="onDragStart($event, 'rect-node')"
-      >
+      <div class="node-item" draggable="true" @dragstart="onDragStart($event, 'rect-node')">
         <div class="node-preview rect-preview"></div>
         <span class="node-label"></span>
       </div>
-      <div
-        class="node-item"
-        draggable="true"
-        @dragstart="onDragStart($event, 'circle-node')"
-      >
+      <div class="node-item" draggable="true" @dragstart="onDragStart($event, 'circle-node')">
         <div class="node-preview circle-preview"></div>
         <span class="node-label"></span>
       </div>
-      <div
-        class="node-item"
-        draggable="true"
-        @dragstart="onDragStart($event, 'polygon-node')"
-      >
+      <div class="node-item" draggable="true" @dragstart="onDragStart($event, 'polygon-node')">
         <div class="node-preview polygon-preview"></div>
         <span class="node-label"></span>
       </div>
@@ -31,15 +19,21 @@
     <h3 class="sidebar-title" style="margin-top: 24px">操作</h3>
     <div class="operation-list">
       <el-button type="primary" @click="$emit('clear')" size="small" style="width: 100%; margin-bottom: 8px">
-        <el-icon><Delete /></el-icon>
+        <el-icon>
+          <Delete />
+        </el-icon>
         清空画布
       </el-button>
       <el-button @click="$emit('export')" size="small" style="width: 100%; margin-bottom: 8px">
-        <el-icon><Download /></el-icon>
+        <el-icon>
+          <Download />
+        </el-icon>
         导出 JSON
       </el-button>
       <el-button @click="$emit('import')" size="small" style="width: 100%">
-        <el-icon><Upload /></el-icon>
+        <el-icon>
+          <Upload />
+        </el-icon>
         导入 JSON
       </el-button>
     </div>

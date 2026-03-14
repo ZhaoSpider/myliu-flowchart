@@ -13,10 +13,18 @@ const service: AxiosInstance = axios.create({
 // 请求拦截器
 service.interceptors.request.use(
   (config) => {
-    // 从localStorage获取token
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+    // 从localStorage获取token (pinia持久化存储在myliu-user中)
+    const userStr = localStorage.getItem('myliu-user')
+    if (userStr) {
+      try {
+        const userData = JSON.parse(userStr)
+        const token = userData.token || userData.user?.token
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`
+        }
+      } catch (e) {
+        console.error('解析用户数据失败:', e)
+      }
     }
     return config
   },

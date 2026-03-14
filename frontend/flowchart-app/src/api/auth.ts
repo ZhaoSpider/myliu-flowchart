@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import type { LoginForm, RegisterForm, User, Result } from '@/types'
+import type { LoginForm, RegisterForm, User, Result, UpdateProfileForm, UpdatePasswordForm } from '@/types'
 
 export const authApi = {
   /**
@@ -24,5 +24,17 @@ export const authApi = {
    * 退出登录
    */
   logout: () => 
-    request.post<Result<void>>('/auth/logout')
+    request.post<Result<void>>('/auth/logout'),
+
+  /**
+   * 更新个人信息
+   */
+  updateProfile: (data: UpdateProfileForm) =>
+    request.put<Result<User>>('/auth/profile', data),
+
+  /**
+   * 修改密码
+   */
+  updatePassword: (data: UpdatePasswordForm) =>
+    request.put<Result<void>>('/auth/password', data)
 }

@@ -28,6 +28,7 @@ model: auto
 ## 代码规范
 
 ### Dockerfile示例
+
 ```dockerfile
 # 多阶段构建
 FROM eclipse-temurin:17-jre-alpine AS runtime
@@ -54,8 +55,9 @@ ENTRYPOINT ["java", "-Xms256m", "-Xmx512m", "-jar", "app.jar"]
 ```
 
 ### docker-compose.yml示例
+
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   backend:
@@ -82,6 +84,7 @@ networks:
 ```
 
 ### Nginx配置示例
+
 ```nginx
 upstream backend {
     server backend:8080;

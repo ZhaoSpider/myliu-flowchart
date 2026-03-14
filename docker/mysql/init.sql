@@ -160,7 +160,7 @@ INSERT INTO `sys_role` (`role_name`, `role_code`, `description`, `sort`) VALUES
 -- 插入默认管理员用户
 -- 密码: admin123 (BCrypt加密后的值)
 INSERT INTO `sys_user` (`username`, `password`, `nickname`, `email`, `status`) VALUES
-('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5EH', '超级管理员', 'admin@myliu.com', 1);
+('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZRGdjGj/n3.QGh3TTh8vZPPjJqZ1a', '超级管理员', 'admin@myliu.com', 1);
 
 -- 关联管理员角色
 INSERT INTO `sys_user_role` (`user_id`, `role_id`) VALUES (1, 1);

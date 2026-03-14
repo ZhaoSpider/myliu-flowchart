@@ -4,42 +4,55 @@
     <header class="toolbar">
       <div class="toolbar-left">
         <el-button text @click="goBack">
-          <el-icon><ArrowLeft /></el-icon>
+          <el-icon>
+            <ArrowLeft />
+          </el-icon>
           返回
         </el-button>
         <el-divider direction="vertical" />
         <span class="file-name">{{ fileName }}</span>
       </div>
-      
+
       <div class="toolbar-center">
         <el-button-group>
           <el-button @click="undo" :disabled="!canUndo">
-            <el-icon><Back /></el-icon>
+            <el-icon>
+              <Back />
+            </el-icon>
           </el-button>
           <el-button @click="redo" :disabled="!canRedo">
-            <el-icon><Right /></el-icon>
+            <el-icon>
+              <Right />
+            </el-icon>
           </el-button>
         </el-button-group>
-        
+
         <el-button-group>
           <el-button @click="zoomIn">
-            <el-icon><ZoomIn /></el-icon>
+            <el-icon>
+              <ZoomIn />
+            </el-icon>
           </el-button>
           <el-button @click="zoomOut">
-            <el-icon><ZoomOut /></el-icon>
+            <el-icon>
+              <ZoomOut />
+            </el-icon>
           </el-button>
-          <el-button @click="resetZoom">100%</el-button>
         </el-button-group>
       </div>
-      
+
       <div class="toolbar-right">
         <el-button @click="save">
-          <el-icon><DocumentChecked /></el-icon>
+          <el-icon>
+            <DocumentChecked />
+          </el-icon>
           保存
         </el-button>
         <el-dropdown @command="handleExport">
           <el-button type="primary">
-            导出 <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+            导出 <el-icon class="el-icon--right">
+              <ArrowDown />
+            </el-icon>
           </el-button>
           <template #dropdown>
             <el-dropdown-menu>
@@ -51,36 +64,28 @@
         </el-dropdown>
       </div>
     </header>
-    
+
     <div class="editor-container">
       <!-- 左侧节点面板 -->
       <aside class="sidebar">
         <div class="sidebar-content">
           <div class="sidebar-title">基础图形</div>
           <div class="node-list">
-            <div 
-              v-for="node in nodeTypes" 
-              :key="node.type"
-              class="node-item"
-              draggable="true"
-              @dragstart="handleDragStart($event, node)"
-            >
-              <div 
-                class="node-preview" 
-                :class="`shape-${node.type}`"
-              >
+            <div v-for="node in nodeTypes" :key="node.type" class="node-item" draggable="true"
+              @dragstart="handleDragStart($event, node)">
+              <div class="node-preview" :class="`shape-${node.type}`">
                 <span class="node-label">{{ node.label }}</span>
               </div>
             </div>
           </div>
         </div>
       </aside>
-      
+
       <!-- 画布区域 -->
       <main class="canvas-wrapper">
         <div ref="canvasRef" class="canvas"></div>
       </main>
-      
+
       <!-- 右侧属性面板 -->
       <aside class="properties" :style="rightSidebarStyle">
         <div class="resizer resizer-right" @mousedown="startResizeRight"></div>
@@ -116,9 +121,9 @@ import { Keyboard } from '@antv/x6-plugin-keyboard'
 import { History } from '@antv/x6-plugin-history'
 import { Export } from '@antv/x6-plugin-export'
 import { ElMessage } from 'element-plus'
-import { 
-  ArrowLeft, Back, Right, ZoomIn, ZoomOut, 
-  DocumentChecked, ArrowDown 
+import {
+  ArrowLeft, Back, Right, ZoomIn, ZoomOut,
+  DocumentChecked, ArrowDown
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -137,10 +142,6 @@ const minSidebarWidth = 150
 const maxSidebarWidth = 400
 const minCanvasWidth = 400
 
-// 侧边栏样式
-const leftSidebarStyle = computed(() => ({
-  width: `${leftSidebarWidth.value}px`
-}))
 
 const rightSidebarStyle = computed(() => ({
   width: `${rightSidebarWidth.value}px`
@@ -170,16 +171,16 @@ const startResizeRight = (e: MouseEvent) => {
 
 const handleResize = (e: MouseEvent) => {
   if (!isResizingLeft && !isResizingRight) return
-  
+
   const windowWidth = window.innerWidth
-  
+
   if (isResizingLeft) {
     const delta = e.clientX - startX
     const newWidth = Math.max(minSidebarWidth, Math.min(maxSidebarWidth, startWidth + delta))
     const availableWidth = windowWidth - rightSidebarWidth.value - minCanvasWidth
     leftSidebarWidth.value = Math.min(newWidth, availableWidth)
   }
-  
+
   if (isResizingRight) {
     const delta = e.clientX - startX
     const newWidth = Math.max(minSidebarWidth, Math.min(maxSidebarWidth, startWidth - delta))
@@ -201,17 +202,17 @@ const canRedo = computed(() => graph?.canRedo() || false)
 
 // 节点类型
 const nodeTypes = [
-  { type: 'rect', label: '',  shape: 'rect' },
-  { type: 'circle', label: '',  shape: 'circle' },
-  { type: 'diamond', label: '',  shape: 'path' },
-  { type: 'parallelogram', label: '',  shape: 'path' },
-  { type: 'ellipse', label: '',  shape: 'ellipse' }
+  { type: 'rect', label: '', shape: 'rect' },
+  { type: 'circle', label: '', shape: 'circle' },
+  { type: 'diamond', label: '', shape: 'path' },
+  { type: 'parallelogram', label: '', shape: 'path' },
+  { type: 'ellipse', label: '', shape: 'ellipse' }
 ]
 
 // 初始化画布
 const initGraph = async () => {
   if (!canvasRef.value) return
-  
+
   graph = new Graph({
     container: canvasRef.value,
     width: canvasRef.value.offsetWidth,
@@ -238,29 +239,19 @@ const initGraph = async () => {
     },
     connecting: {
       anchor: 'center',
-      connectionPoint: 'anchor',
       snap: { radius: 20 },
       allowBlank: false,
       allowLoop: false,
       allowNode: false,
       allowEdge: false,
       highlight: true,
+      // 只允许从自定义的圆形连接桩拉线，避免整块节点表面都出现一堆连接点
+      validateMagnet({ magnet }) {
+        return magnet.getAttribute('port-group') != null
+      },
       createEdge() {
+        // 默认连线：纯线条，无箭头
         return new Shape.Edge({
-          attrs: {
-            line: {
-              stroke: '#5F95FF',
-              strokeWidth: 2,
-              targetMarker: {
-                name: 'classic',
-                size: 8
-              }
-            },
-            outline: {
-              stroke: '#5F95FF',
-              strokeWidth: 1
-            }
-          },
           router: {
             name: 'manhattan'
           },
@@ -291,21 +282,21 @@ const initGraph = async () => {
       }
     }
   })
-  
+
   // 启用插件
   graph.use(new Selection({ enabled: true, multiple: true }))
   graph.use(new Snapline({ enabled: true }))
   graph.use(new Keyboard({ enabled: true }))
   graph.use(new History({ enabled: true }))
   graph.use(new Export())
-  
+
   // 启用节点变换（调整大小、旋转）
   const { Transform } = await import('@antv/x6-plugin-transform')
   graph.use(new Transform({
     resizing: true,
     rotating: true,
   }))
-  
+
   // 绑定事件
   graph.on('node:click', ({ node }) => {
     selectedNode.value = {
@@ -315,20 +306,20 @@ const initGraph = async () => {
       height: node.size().height
     }
   })
-  
+
   // 双击进入编辑模式 - 内联编辑
   graph.on('node:dblclick', ({ node, e }) => {
     e.stopPropagation()
     if (!graph) return
-    
+
     // 获取当前文本
     const currentText = String(node.attr('text/text') || '')
-    
+
     // 获取节点在画布上的位置
     const bbox = node.getBBox()
     const graphContainer = canvasRef.value!
     const containerRect = graphContainer.getBoundingClientRect()
-    
+
     // 创建编辑容器
     const editorContainer = document.createElement('div')
     editorContainer.style.position = 'absolute'
@@ -337,7 +328,7 @@ const initGraph = async () => {
     editorContainer.style.alignItems = 'center'
     editorContainer.style.justifyContent = 'center'
     editorContainer.style.pointerEvents = 'none'
-    
+
     // 计算位置（考虑画布缩放和平移）
     const currentGraph = graph!
     const zoom = currentGraph.zoom()
@@ -346,12 +337,12 @@ const initGraph = async () => {
     const y = containerRect.top + (bbox.y + translate.ty) * zoom
     const width = bbox.width * zoom
     const height = bbox.height * zoom
-    
+
     editorContainer.style.left = `${x}px`
     editorContainer.style.top = `${y}px`
     editorContainer.style.width = `${width}px`
     editorContainer.style.height = `${height}px`
-    
+
     // 创建输入框
     const input = document.createElement('input')
     input.value = currentText
@@ -364,12 +355,12 @@ const initGraph = async () => {
     input.style.textAlign = 'center'
     input.style.outline = 'none'
     input.style.pointerEvents = 'auto'
-    
+
     editorContainer.appendChild(input)
     document.body.appendChild(editorContainer)
     input.focus()
     input.select()
-    
+
     // 保存文本
     const saveText = () => {
       const newText = input.value
@@ -381,14 +372,14 @@ const initGraph = async () => {
         document.body.removeChild(editorContainer)
       }
     }
-    
+
     // 取消编辑
     const cancelEdit = () => {
       if (document.body.contains(editorContainer)) {
         document.body.removeChild(editorContainer)
       }
     }
-    
+
     input.addEventListener('blur', saveText)
     input.addEventListener('keydown', (evt) => {
       if (evt.key === 'Enter') {
@@ -399,24 +390,24 @@ const initGraph = async () => {
       }
     })
   })
-  
+
   // 显示/隐藏连接桩
   graph.on('node:mouseenter', ({ node }) => {
     node.getPorts().forEach((port: any) => {
       node.portProp(port.id, 'attrs/circle/style/visibility', 'visible')
     })
   })
-  
+
   graph.on('node:mouseleave', ({ node }) => {
     node.getPorts().forEach((port: any) => {
       node.portProp(port.id, 'attrs/circle/style/visibility', 'hidden')
     })
   })
-  
+
   graph.on('blank:click', () => {
     selectedNode.value = null
   })
-  
+
   // 快捷键
   graph.bindKey(['delete', 'backspace'], () => {
     const cells = graph?.getSelectedCells()
@@ -424,7 +415,7 @@ const initGraph = async () => {
       graph?.removeCells(cells)
     }
   })
-  
+
   graph.bindKey('ctrl+z', () => graph?.undo())
   graph.bindKey('ctrl+y', () => graph?.redo())
   graph.bindKey('ctrl+s', (e) => {
@@ -443,26 +434,25 @@ const handleDrop = (e: DragEvent) => {
   e.preventDefault()
   const data = e.dataTransfer?.getData('nodeType')
   if (!data || !graph) return
-  
+
   const nodeType = JSON.parse(data)
   const rect = canvasRef.value?.getBoundingClientRect()
   if (!rect) return
-  
+
   const x = e.clientX - rect.left
   const y = e.clientY - rect.top
-  
+
   addNode(nodeType, x, y)
 }
 
 // 添加节点
 const addNode = (nodeType: any, x: number, y: number) => {
   if (!graph) return
-  
+
   const ports = {
     groups: {
       top: {
         position: 'top',
-        connected: false,
         attrs: {
           circle: {
             r: 4,
@@ -478,7 +468,6 @@ const addNode = (nodeType: any, x: number, y: number) => {
       },
       right: {
         position: 'right',
-        connected: false,
         attrs: {
           circle: {
             r: 4,
@@ -494,7 +483,6 @@ const addNode = (nodeType: any, x: number, y: number) => {
       },
       bottom: {
         position: 'bottom',
-        connected: false,
         attrs: {
           circle: {
             r: 4,
@@ -510,7 +498,6 @@ const addNode = (nodeType: any, x: number, y: number) => {
       },
       left: {
         position: 'left',
-        connected: false,
         attrs: {
           circle: {
             r: 4,
@@ -526,13 +513,13 @@ const addNode = (nodeType: any, x: number, y: number) => {
       }
     },
     items: [
-      { id: 'top', group: 'top', connected: false },
-      { id: 'right', group: 'right', connected: false },
-      { id: 'bottom', group: 'bottom', connected: false },
-      { id: 'left', group: 'left', connected: false }
+      { id: 'top', group: 'top' },
+      { id: 'right', group: 'right' },
+      { id: 'bottom', group: 'bottom' },
+      { id: 'left', group: 'left' }
     ]
   }
-  
+
   const baseConfig: any = {
     x: x - 50,
     y: y - 25,
@@ -552,29 +539,29 @@ const addNode = (nodeType: any, x: number, y: number) => {
       }
     }
   }
-  
+
   let node: any
-  
+
   switch (nodeType.type) {
     case 'rect':
-      node = graph.addNode({ 
-        ...baseConfig, 
+      node = graph.addNode({
+        ...baseConfig,
         shape: 'rect',
         width: 100,
         height: 50
       })
       break
     case 'circle':
-      node = graph.addNode({ 
-        ...baseConfig, 
+      node = graph.addNode({
+        ...baseConfig,
         shape: 'circle',
         width: 60,
         height: 60
       })
       break
     case 'diamond':
-      node = graph.addNode({ 
-        ...baseConfig, 
+      node = graph.addNode({
+        ...baseConfig,
         shape: 'polygon',
         width: 80,
         height: 80,
@@ -582,8 +569,8 @@ const addNode = (nodeType: any, x: number, y: number) => {
       })
       break
     case 'parallelogram':
-      node = graph.addNode({ 
-        ...baseConfig, 
+      node = graph.addNode({
+        ...baseConfig,
         shape: 'polygon',
         width: 100,
         height: 50,
@@ -591,22 +578,22 @@ const addNode = (nodeType: any, x: number, y: number) => {
       })
       break
     case 'ellipse':
-      node = graph.addNode({ 
-        ...baseConfig, 
+      node = graph.addNode({
+        ...baseConfig,
         shape: 'ellipse',
         width: 100,
         height: 60
       })
       break
     default:
-      node = graph.addNode({ 
-        ...baseConfig, 
+      node = graph.addNode({
+        ...baseConfig,
         shape: 'rect',
         width: 100,
         height: 50
       })
   }
-  
+
   return node
 }
 
@@ -618,21 +605,20 @@ const redo = () => graph?.redo()
 
 const zoomIn = () => graph?.zoom(0.1)
 const zoomOut = () => graph?.zoom(-0.1)
-const resetZoom = () => graph?.zoom(1)
 
 const save = async () => {
   if (!graph) return
-  
+
   const json = graph.toJSON()
   console.log('保存数据:', json)
-  
+
   // TODO: 调用API保存
   ElMessage.success('保存成功')
 }
 
 const handleExport = (format: string) => {
   if (!graph) return
-  
+
   switch (format) {
     case 'png':
       graph.toPNG((dataUri) => {
@@ -664,7 +650,7 @@ const handleExport = (format: string) => {
       URL.revokeObjectURL(url)
       break
   }
-  
+
   ElMessage.success(`导出 ${format.toUpperCase()} 成功`)
 }
 
@@ -687,11 +673,11 @@ const updateNodeSize = () => {
 // 生命周期
 onMounted(() => {
   initGraph()
-  
+
   // 监听拖拽事件
   canvasRef.value?.addEventListener('dragover', (e) => e.preventDefault())
   canvasRef.value?.addEventListener('drop', handleDrop)
-  
+
   // 窗口大小变化时调整画布
   window.addEventListener('resize', () => {
     if (canvasRef.value && graph) {
@@ -721,22 +707,22 @@ onUnmounted(() => {
   background: #fff;
   border-bottom: 1px solid #ddd;
   color: #333;
-  
+
   .toolbar-left {
     display: flex;
     align-items: center;
     gap: 10px;
-    
+
     .file-name {
       font-weight: 500;
     }
   }
-  
+
   .toolbar-center {
     display: flex;
     gap: 10px;
   }
-  
+
   .toolbar-right {
     display: flex;
     gap: 10px;
@@ -747,25 +733,25 @@ onUnmounted(() => {
   flex: 1;
   display: flex;
   overflow: hidden;
-  
+
   .resizer {
     width: 4px;
     background: transparent;
     cursor: col-resize;
     transition: background 0.2s;
-    
+
     &:hover {
       background: #409eff;
     }
   }
-  
+
   .resizer-left {
     position: absolute;
     right: 0;
     top: 0;
     bottom: 0;
   }
-  
+
   .resizer-right {
     position: absolute;
     left: 0;
@@ -781,14 +767,14 @@ onUnmounted(() => {
   overflow: hidden;
   position: relative;
   flex-shrink: 0;
-  
+
   .sidebar-content {
     padding: 16px;
     height: 100%;
     overflow-y: auto;
     box-sizing: border-box;
   }
-  
+
   .sidebar-title {
     font-weight: 600;
     margin-bottom: 16px;
@@ -796,23 +782,23 @@ onUnmounted(() => {
     border-bottom: 1px solid #ddd;
     color: #333;
   }
-  
+
   .node-list {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
-    
+
     .node-item {
       cursor: grab;
       display: flex;
       flex-direction: column;
       align-items: center;
       padding: 8px;
-      
+
       &:active {
         cursor: grabbing;
       }
-      
+
       .node-preview {
         width: 100%;
         height: 50px;
@@ -825,7 +811,7 @@ onUnmounted(() => {
         margin-bottom: 6px;
         transition: all 0.2s;
         position: relative;
-        
+
         .node-label {
           position: relative;
           z-index: 1;
@@ -833,37 +819,37 @@ onUnmounted(() => {
           color: #333;
           display: block;
         }
-        
+
         &.shape-rect {
           border-radius: 4px;
         }
-        
+
         &.shape-circle {
           border-radius: 50%;
           width: 50px;
           height: 50px;
           margin: 0 auto 6px;
         }
-        
+
         &.shape-diamond {
           transform: rotate(45deg);
           width: 40px;
           height: 40px;
           margin: 5px auto 11px;
-          
+
           .node-label {
             transform: rotate(-45deg);
           }
         }
-        
+
         &.shape-parallelogram {
           transform: skew(-20deg);
-          
+
           .node-label {
             transform: skew(20deg);
           }
         }
-        
+
         &.shape-ellipse {
           border-radius: 50%;
         }
@@ -875,7 +861,7 @@ onUnmounted(() => {
 .canvas-wrapper {
   flex: 1;
   position: relative;
-  
+
   .canvas {
     width: 100%;
     height: 100%;
@@ -889,14 +875,14 @@ onUnmounted(() => {
   position: relative;
   flex-shrink: 0;
   display: flex;
-  
+
   .properties-content {
     padding: 16px;
     flex: 1;
     overflow-y: auto;
     box-sizing: border-box;
   }
-  
+
   .properties-title {
     font-weight: 600;
     margin-bottom: 16px;
@@ -904,7 +890,7 @@ onUnmounted(() => {
     border-bottom: 1px solid #ddd;
     color: #333;
   }
-  
+
   .empty-properties {
     padding: 20px 0;
   }

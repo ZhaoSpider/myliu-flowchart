@@ -65,7 +65,6 @@ const initGraph = () => {
           shape: 'edge',
           attrs: {
             line: {
-              stroke: '#5f95ff',
               strokeWidth: 1,
               targetMarker: {
                 name: 'classic',

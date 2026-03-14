@@ -25,6 +25,18 @@ export interface RegisterForm {
   nickname?: string
 }
 
+export interface UpdateProfileForm {
+  nickname?: string
+  email?: string
+  phone?: string
+}
+
+export interface UpdatePasswordForm {
+  oldPassword: string
+  newPassword: string
+  confirmPassword: string
+}
+
 /**
  * 流程图文件相关类型
  */

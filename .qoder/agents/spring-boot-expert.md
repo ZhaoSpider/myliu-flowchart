@@ -27,6 +27,7 @@ model: auto
 ## 代码规范
 
 ### Controller层
+
 ```java
 @RestController
 @RequestMapping("/api/v1/users")
@@ -42,6 +43,7 @@ public class UserController {
 ```
 
 ### Service层
+
 ```java
 @Service
 @RequiredArgsConstructor
@@ -58,6 +60,7 @@ public class UserServiceImpl implements UserService {
 ```
 
 ### Entity层
+
 ```java
 @Data
 @TableName("sys_user")

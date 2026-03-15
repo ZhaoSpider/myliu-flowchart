@@ -14,6 +14,12 @@ export const useUserStore = defineStore('user', () => {
   const isLoggedIn = computed(() => !!token.value)
   const username = computed(() => userInfo.value?.username || '')
   const nickname = computed(() => userInfo.value?.nickname || userInfo.value?.username || '')
+  
+  // 判断是否是管理员（拥有 ADMIN 或 SUPER_ADMIN 角色）
+  const isAdmin = computed(() => {
+    const roles = userInfo.value?.roles || []
+    return roles.includes('ADMIN') || roles.includes('SUPER_ADMIN')
+  })
 
   // 方法
   /**
@@ -66,6 +72,7 @@ export const useUserStore = defineStore('user', () => {
     isLoggedIn,
     username,
     nickname,
+    isAdmin,
     login,
     logout,
     fetchCurrentUser

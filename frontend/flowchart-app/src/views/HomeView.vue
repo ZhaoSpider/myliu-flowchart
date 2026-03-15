@@ -21,6 +21,9 @@
               <el-dropdown-item command="profile">
                 <el-icon><User /></el-icon>个人中心
               </el-dropdown-item>
+              <el-dropdown-item v-if="userStore.isAdmin" command="admin">
+                <el-icon><Setting /></el-icon>管理后台
+              </el-dropdown-item>
               <el-dropdown-item divided command="logout">
                 <el-icon><SwitchButton /></el-icon>退出登录
               </el-dropdown-item>
@@ -65,7 +68,7 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { Edit, Document, Download, ArrowDown, User, SwitchButton } from '@element-plus/icons-vue'
+import { Edit, Document, Download, ArrowDown, User, SwitchButton, Setting } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'
 
 const router = useRouter()
@@ -82,6 +85,8 @@ const goFiles = () => {
 const handleCommand = (command: string) => {
   if (command === 'profile') {
     router.push('/profile')
+  } else if (command === 'admin') {
+    router.push('/admin')
   } else if (command === 'logout') {
     userStore.logout()
   }

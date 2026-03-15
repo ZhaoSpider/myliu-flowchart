@@ -38,6 +38,12 @@ const routes: RouteRecordRaw[] = [
     name: 'Profile',
     component: () => import('@/views/ProfileView.vue'),
     meta: { title: '个人中心', requiresAuth: true }
+  },
+  {
+    path: '/admin',
+    name: 'Admin',
+    component: () => import('@/views/AdminView.vue'),
+    meta: { title: '管理后台', requiresAuth: true, requiresAdmin: true }
   }
 ]
 
@@ -51,15 +57,23 @@ router.beforeEach((to, _from, next) => {
   // 设置页面标题
   document.title = `${to.meta.title || 'MyLiu'} - MyLiu Flowchart`
 
+  const userStore = useUserStore()
+
   // 检查是否需要登录认证
   if (to.meta.requiresAuth) {
-    const userStore = useUserStore()
     if (!userStore.isLoggedIn) {
       // 未登录，保存目标路径并重定向到登录页
       next({
         path: '/login',
         query: { redirect: to.fullPath }
       })
+      return
+    }
+
+    // 检查是否需要管理员权限
+    if (to.meta.requiresAdmin && !userStore.isAdmin) {
+      // 非管理员，重定向到首页
+      next({ path: '/' })
       return
     }
   }

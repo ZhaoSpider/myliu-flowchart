@@ -1,5 +1,5 @@
 <template>
-  <div class="editor-view">
+  <div class="editor-view" :class="{ 'readonly-mode': isReadonly }">
     <!-- 顶部工具栏 -->
     <header class="toolbar">
       <div class="toolbar-left">
@@ -10,7 +10,8 @@
           返回
         </el-button>
         <el-divider direction="vertical" />
-        <span class="file-name">{{ fileName }}</span>
+        <span class="file-name" @click="!isReadonly && showRenameDialog">{{ fileName }}</span>
+        <el-icon v-if="!isReadonly" class="edit-icon" @click="showRenameDialog"><Edit /></el-icon>
       </div>
 
       <div class="toolbar-center">
@@ -42,12 +43,13 @@
       </div>
 
       <div class="toolbar-right">
-        <el-button @click="save">
+        <el-button v-if="!isReadonly" @click="save" :loading="isSaving">
           <el-icon>
             <DocumentChecked />
           </el-icon>
           保存
         </el-button>
+        <el-tag v-else type="warning" style="margin-right: 12px">只读模式</el-tag>
         <el-dropdown @command="handleExport">
           <el-button type="primary">
             导出 <el-icon class="el-icon--right">
@@ -67,7 +69,7 @@
 
     <div class="editor-container">
       <!-- 左侧节点面板 -->
-      <aside class="sidebar">
+      <aside v-if="!isReadonly" class="sidebar">
         <div class="sidebar-content">
           <div class="sidebar-title">基础图形</div>
           <div class="node-list">
@@ -87,7 +89,7 @@
       </main>
 
       <!-- 右侧属性面板 -->
-      <aside class="properties" :style="rightSidebarStyle">
+      <aside v-if="!isReadonly" class="properties" :style="rightSidebarStyle">
         <div class="resizer resizer-right" @mousedown="startResizeRight"></div>
         <div class="properties-content">
           <div class="properties-title">属性</div>
@@ -120,19 +122,26 @@ import { Snapline } from '@antv/x6-plugin-snapline'
 import { Keyboard } from '@antv/x6-plugin-keyboard'
 import { History } from '@antv/x6-plugin-history'
 import { Export } from '@antv/x6-plugin-export'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   ArrowLeft, Back, Right, ZoomIn, ZoomOut,
-  DocumentChecked, ArrowDown
+  DocumentChecked, ArrowDown, Edit
 } from '@element-plus/icons-vue'
+import { fileApi } from '@/api/file'
+import { useUserStore } from '@/store/user'
 
 const router = useRouter()
 const route = useRoute()
+const userStore = useUserStore()
 
 // 状态
 const canvasRef = ref<HTMLDivElement>()
 const fileName = ref('未命名流程图')
+const fileId = ref<number | null>(null)
 const selectedNode = ref<any>(null)
+const isSaving = ref(false)
+const isLoading = ref(false)
+const isReadonly = ref(false) // 只读模式
 let graph: Graph | null = null
 
 // 侧边栏宽度
@@ -238,15 +247,17 @@ const initGraph = async () => {
       modifiers: ['ctrl', 'meta']
     },
     connecting: {
-      anchor: 'center',
-      snap: { radius: 20 },
-      allowBlank: false,
-      allowLoop: false,
-      allowNode: false,
-      allowEdge: false,
-      highlight: true,
+      anchor: 'center',           // 连线锚点位置：节点中心
+      snap: { radius: 25 },       // 连接桩吸附半径，靠近时自动吸附
+      allowBlank: false,          // 禁止连接到画布空白处
+      allowLoop: false,           // 禁止节点连接自身
+      allowNode: false,           // 禁止直接连接节点本身
+      allowEdge: false,           // 禁止连接到其他连线上
+      highlight: true,            // 拖动连线时高亮显示可连接的连接桩
       // 只允许从自定义的圆形连接桩拉线，避免整块节点表面都出现一堆连接点
       validateMagnet({ magnet }) {
+        // 只读模式下禁止创建连线
+        if (isReadonly.value) return false
         return magnet.getAttribute('port-group') != null
       },
       createEdge() {
@@ -284,18 +295,20 @@ const initGraph = async () => {
   })
 
   // 启用插件
-  graph.use(new Selection({ enabled: true, multiple: true }))
+  graph.use(new Selection({ enabled: !isReadonly.value, multiple: true }))
   graph.use(new Snapline({ enabled: true }))
   graph.use(new Keyboard({ enabled: true }))
-  graph.use(new History({ enabled: true }))
+  graph.use(new History({ enabled: !isReadonly.value }))
   graph.use(new Export())
 
-  // 启用节点变换（调整大小、旋转）
-  const { Transform } = await import('@antv/x6-plugin-transform')
-  graph.use(new Transform({
-    resizing: true,
-    rotating: true,
-  }))
+  // 启用节点变换（调整大小、旋转）- 只读模式下禁用
+  if (!isReadonly.value) {
+    const { Transform } = await import('@antv/x6-plugin-transform')
+    graph.use(new Transform({
+      resizing: true,
+      rotating: true,
+    }))
+  }
 
   // 绑定事件
   graph.on('node:click', ({ node }) => {
@@ -307,10 +320,10 @@ const initGraph = async () => {
     }
   })
 
-  // 双击进入编辑模式 - 内联编辑
+  // 双击进入编辑模式 - 内联编辑（只读模式下禁用）
   graph.on('node:dblclick', ({ node, e }) => {
     e.stopPropagation()
-    if (!graph) return
+    if (!graph || isReadonly.value) return
 
     // 获取当前文本
     const currentText = String(node.attr('text/text') || '')
@@ -409,17 +422,21 @@ const initGraph = async () => {
   })
 
   // 快捷键
-  graph.bindKey(['delete', 'backspace'], () => {
-    const cells = graph?.getSelectedCells()
-    if (cells?.length) {
-      graph?.removeCells(cells)
-    }
-  })
+  // 只读模式下禁用删除快捷键
+  if (!isReadonly.value) {
+    graph.bindKey(['delete', 'backspace'], () => {
+      const cells = graph?.getSelectedCells()
+      if (cells?.length) {
+        graph?.removeCells(cells)
+      }
+    })
+  }
 
-  graph.bindKey('ctrl+z', () => graph?.undo())
-  graph.bindKey('ctrl+y', () => graph?.redo())
+  graph.bindKey('ctrl+z', () => !isReadonly.value && graph?.undo())
+  graph.bindKey('ctrl+y', () => !isReadonly.value && graph?.redo())
   graph.bindKey('ctrl+s', (e) => {
     e.preventDefault()
+    if (isReadonly.value) return
     save()
   })
 }
@@ -608,15 +625,116 @@ const zoomOut = () => graph?.zoom(-0.1)
 
 const save = async () => {
   if (!graph) return
-
+  
   const json = graph.toJSON()
-  console.log('保存数据:', json)
-
-  // TODO: 调用API保存
-  ElMessage.success('保存成功')
+  const content = JSON.stringify(json)
+  
+  // 如果没有文件ID，先创建文件
+  if (!fileId.value) {
+    try {
+      const { value: newFileName } = await ElMessageBox.prompt('请输入文件名', '新建文件', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        inputValue: fileName.value === '未命名流程图' ? '' : fileName.value,
+        inputPlaceholder: '请输入文件名'
+      })
+      
+      if (!newFileName) {
+        ElMessage.warning('文件名不能为空')
+        return
+      }
+      
+      isSaving.value = true
+      
+      // 创建文件
+      const { data: newFile } = await fileApi.create({ 
+        fileName: newFileName, 
+        content 
+      })
+      
+      fileId.value = newFile.id
+      fileName.value = newFile.fileName
+      
+      ElMessage.success('文件创建成功')
+    } catch (error: any) {
+      if (error !== 'cancel') {
+        ElMessage.error(error.response?.data?.message || '创建文件失败')
+      }
+    } finally {
+      isSaving.value = false
+    }
+  } else {
+    // 保存已有文件
+    try {
+      isSaving.value = true
+      
+      await fileApi.saveContent(fileId.value, content)
+      
+      ElMessage.success('保存成功')
+    } catch (error: any) {
+      ElMessage.error(error.response?.data?.message || '保存失败')
+    } finally {
+      isSaving.value = false
+    }
+  }
 }
 
-const handleExport = (format: string) => {
+// 加载文件内容
+const loadFile = async (id: number) => {
+  try {
+    isLoading.value = true
+    
+    // 获取文件信息
+    const { data: file } = await fileApi.get(id)
+    fileName.value = file.fileName
+    fileId.value = file.id
+    
+    // 获取文件内容
+    const { data: content } = await fileApi.getContent(id)
+    
+    if (content && graph) {
+      const json = JSON.parse(content)
+      graph.fromJSON(json)
+    }
+  } catch (error: any) {
+    ElMessage.error(error.response?.data?.message || '加载文件失败')
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// 重命名文件
+const showRenameDialog = async () => {
+  if (!fileId.value) {
+    // 如果是新文件，直接保存
+    save()
+    return
+  }
+  
+  try {
+    const { value: newFileName } = await ElMessageBox.prompt('请输入新的文件名', '重命名', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      inputValue: fileName.value,
+      inputPlaceholder: '请输入文件名'
+    })
+    
+    if (!newFileName) {
+      ElMessage.warning('文件名不能为空')
+      return
+    }
+    
+    await fileApi.update(fileId.value!, { fileName: newFileName })
+    fileName.value = newFileName
+    ElMessage.success('重命名成功')
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.response?.data?.message || '重命名失败')
+    }
+  }
+}
+
+const handleExport = async (format: string) => {
   if (!graph) return
 
   switch (format) {
@@ -627,6 +745,7 @@ const handleExport = (format: string) => {
         link.href = dataUri
         link.click()
       })
+      ElMessage.success('导出 PNG 成功')
       break
     case 'svg':
       graph.toSVG((svg) => {
@@ -638,20 +757,48 @@ const handleExport = (format: string) => {
         link.click()
         URL.revokeObjectURL(url)
       })
+      ElMessage.success('导出 SVG 成功')
       break
     case 'json':
-      const json = JSON.stringify(graph.toJSON(), null, 2)
-      const blob = new Blob([json], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.download = `${fileName.value}.json`
-      link.href = url
-      link.click()
-      URL.revokeObjectURL(url)
+      // 如果有文件ID，优先使用后端API导出
+      if (fileId.value) {
+        try {
+          const response = await fileApi.export(fileId.value, 'json')
+          const blob = response.data
+          const url = URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.download = `${fileName.value}.json`
+          link.href = url
+          link.click()
+          URL.revokeObjectURL(url)
+          ElMessage.success('导出 JSON 成功')
+        } catch (error: any) {
+          // 如果后端导出失败，回退到本地导出
+          console.warn('后端导出失败，使用本地导出:', error)
+          const json = JSON.stringify(graph.toJSON(), null, 2)
+          const blob = new Blob([json], { type: 'application/json' })
+          const url = URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.download = `${fileName.value}.json`
+          link.href = url
+          link.click()
+          URL.revokeObjectURL(url)
+          ElMessage.success('导出 JSON 成功')
+        }
+      } else {
+        // 新文件使用本地导出
+        const json = JSON.stringify(graph.toJSON(), null, 2)
+        const blob = new Blob([json], { type: 'application/json' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.download = `${fileName.value}.json`
+        link.href = url
+        link.click()
+        URL.revokeObjectURL(url)
+        ElMessage.success('导出 JSON 成功')
+      }
       break
   }
-
-  ElMessage.success(`导出 ${format.toUpperCase()} 成功`)
 }
 
 const updateNodeLabel = () => {
@@ -671,12 +818,17 @@ const updateNodeSize = () => {
 }
 
 // 生命周期
-onMounted(() => {
-  initGraph()
+onMounted(async () => {
+  // 检查是否是只读模式
+  isReadonly.value = route.query.readonly === 'true'
 
-  // 监听拖拽事件
-  canvasRef.value?.addEventListener('dragover', (e) => e.preventDefault())
-  canvasRef.value?.addEventListener('drop', handleDrop)
+  await initGraph()
+
+  // 监听拖拽事件（只读模式下不需要）
+  if (!isReadonly.value) {
+    canvasRef.value?.addEventListener('dragover', (e) => e.preventDefault())
+    canvasRef.value?.addEventListener('drop', handleDrop)
+  }
 
   // 窗口大小变化时调整画布
   window.addEventListener('resize', () => {
@@ -684,6 +836,12 @@ onMounted(() => {
       graph.resize(canvasRef.value.offsetWidth, canvasRef.value.offsetHeight)
     }
   })
+
+  // 如果有文件ID参数，加载文件
+  const id = route.params.id
+  if (id) {
+    await loadFile(Number(id))
+  }
 })
 
 onUnmounted(() => {
@@ -715,6 +873,21 @@ onUnmounted(() => {
 
     .file-name {
       font-weight: 500;
+      cursor: pointer;
+      
+      &:hover {
+        color: #409eff;
+      }
+    }
+
+    .edit-icon {
+      cursor: pointer;
+      font-size: 14px;
+      color: #999;
+      
+      &:hover {
+        color: #409eff;
+      }
     }
   }
 
@@ -894,5 +1067,10 @@ onUnmounted(() => {
   .empty-properties {
     padding: 20px 0;
   }
+}
+
+/* 只读模式下隐藏连接桩 */
+.readonly-mode .x6-port {
+  display: none !important;
 }
 </style>
